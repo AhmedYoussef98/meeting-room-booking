@@ -61,24 +61,28 @@ export async function getRoomBookings(roomId: string, date: Date): Promise<Booki
   return data || []
 }
 
-export function generateTimeSlots(date: Date, duration = 60): TimeSlot[] {
+export function generateTimeSlots(date: Date): TimeSlot[] {
   const slots: TimeSlot[] = []
   const startHour = 8 // 8 AM
   const endHour = 18 // 6 PM
+  const slotInterval = 30 // 30-minute intervals
 
   for (let hour = startHour; hour < endHour; hour++) {
-    const start = new Date(date)
-    start.setHours(hour, 0, 0, 0)
+    for (let minute = 0; minute < 60; minute += slotInterval) {
+      const start = new Date(date)
+      start.setHours(hour, minute, 0, 0)
 
-    const end = new Date(start)
-    end.setMinutes(end.getMinutes() + duration)
+      const end = new Date(start)
+      end.setMinutes(end.getMinutes() + slotInterval)
 
-    if (end.getHours() <= endHour) {
-      slots.push({
-        start,
-        end,
-        available: true, // Will be updated based on existing bookings
-      })
+      // Only add slot if it doesn't go past end hour
+      if (start.getHours() < endHour) {
+        slots.push({
+          start,
+          end,
+          available: true, // Will be updated based on existing bookings
+        })
+      }
     }
   }
 
@@ -97,6 +101,59 @@ export function checkSlotAvailability(slot: TimeSlot, existingBookings: Booking[
       (slot.start <= bookingStart && slot.end >= bookingEnd)
     )
   })
+}
+
+// New function to check if a duration is available from a specific start time
+export function checkDurationAvailability(
+  startTime: Date,
+  durationMinutes: number,
+  existingBookings: Booking[]
+): boolean {
+  const endTime = new Date(startTime)
+  endTime.setMinutes(endTime.getMinutes() + durationMinutes)
+
+  // Check if the proposed booking conflicts with any existing booking
+  return !existingBookings.some((booking) => {
+    const bookingStart = new Date(booking.start_time)
+    const bookingEnd = new Date(booking.end_time)
+
+    // Check for overlap
+    return (
+      (startTime >= bookingStart && startTime < bookingEnd) ||
+      (endTime > bookingStart && endTime <= bookingEnd) ||
+      (startTime <= bookingStart && endTime >= bookingEnd)
+    )
+  })
+}
+
+// Get available durations from a specific start time
+export function getAvailableDurations(
+  startTime: Date,
+  existingBookings: Booking[],
+  maxDurationHours = 8
+): { duration: number; label: string; available: boolean }[] {
+  const durations = [
+    { duration: 30, label: "30 minutes" },
+    { duration: 45, label: "45 minutes" },
+    { duration: 60, label: "1 hour" },
+    { duration: 90, label: "1.5 hours" },
+    { duration: 120, label: "2 hours" },
+    { duration: 150, label: "2.5 hours" },
+    { duration: 180, label: "3 hours" },
+    { duration: 240, label: "4 hours" },
+    { duration: 300, label: "5 hours" },
+    { duration: 360, label: "6 hours" },
+    { duration: 420, label: "7 hours" },
+    { duration: 480, label: "8 hours" },
+  ]
+
+  return durations
+    .filter(({ duration }) => duration <= maxDurationHours * 60)
+    .map(({ duration, label }) => ({
+      duration,
+      label,
+      available: checkDurationAvailability(startTime, duration, existingBookings)
+    }))
 }
 
 export async function createBooking(booking: {

@@ -90,7 +90,7 @@ export function RoomAvailability({ room, selectedDate, onTimeSlotSelect }: RoomA
           <Button
             key={index}
             variant={slot.available ? "outline" : "secondary"}
-            className={`relative h-16 px-4 text-left w-full min-w-0 ${
+            className={`justify-between h-16 px-6 text-left ${
               slot.available
                 ? "hover:bg-primary hover:text-primary-foreground border-primary/20 hover:border-primary"
                 : "opacity-50 cursor-not-allowed"
@@ -98,19 +98,19 @@ export function RoomAvailability({ room, selectedDate, onTimeSlotSelect }: RoomA
             disabled={!slot.available}
             onClick={() => slot.available && onTimeSlotSelect(room, slot)}
           >
-            <div className="flex items-center space-x-3 flex-1 min-w-0 pr-16">
+            <div className="flex items-center space-x-4">
               <Clock className="h-5 w-5 flex-shrink-0" />
-              <div className="flex flex-col items-start flex-1 min-w-0">
-                <span className="font-semibold text-sm sm:text-base whitespace-nowrap overflow-hidden text-ellipsis w-full">
-                  {formatTime(slot.start)} - {formatTime(slot.end)}
+              <div className="flex flex-col items-start">
+                <span className="font-semibold text-base whitespace-nowrap">
+                  {formatTime(slot.start)}
                 </span>
-                <span className="text-xs sm:text-sm text-muted-foreground">
-                  60 minutes
+                <span className="text-sm text-muted-foreground">
+                  Available start time
                 </span>
               </div>
             </div>
             {!slot.available && (
-              <Badge variant="secondary" className="text-xs px-2 py-1 absolute right-2 top-1/2 transform -translate-y-1/2">
+              <Badge variant="secondary" className="text-xs px-2 py-1 flex-shrink-0">
                 Booked
               </Badge>
             )}

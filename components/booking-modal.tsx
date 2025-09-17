@@ -12,8 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Users, MapPin } from "lucide-react"
 import { useState, useEffect } from "react"
-import { createBooking, type Room, type TimeSlot } from "@/lib/room-utils"
+import { createBooking, type Room, type TimeSlot, getRoomBookings, getAvailableDurations } from "@/lib/room-utils"
 import { RoomAvailability } from "@/components/room-availability"
+import { DurationSelector } from "@/components/duration-selector"
 import { sendBookingNotifications } from "@/lib/notifications-utils" // Import sendBookingNotifications
 
 interface BookingModalProps {
@@ -29,11 +30,14 @@ export function BookingModal({ room, isOpen, onClose, onBookingComplete }: Booki
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [attendees, setAttendees] = useState("") // Added attendees field
-  const [duration, setDuration] = useState("60")
+  const [selectedDuration, setSelectedDuration] = useState<number>(60)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [step, setStep] = useState<"datetime" | "preview" | "details">("datetime")
+  const [step, setStep] = useState<"datetime" | "duration" | "preview" | "details">("datetime")
   const [previewTimeSlot, setPreviewTimeSlot] = useState<TimeSlot | null>(null)
+  const [showDurationSelector, setShowDurationSelector] = useState(false)
+  const [roomBookings, setRoomBookings] = useState<any[]>([])
+  const [availableDurations, setAvailableDurations] = useState<any[]>([])
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -44,15 +48,49 @@ export function BookingModal({ room, isOpen, onClose, onBookingComplete }: Booki
       setTitle("")
       setDescription("")
       setAttendees("") // Reset attendees field
-      setDuration("60")
+      setSelectedDuration(60)
       setStep("datetime")
       setError(null)
+      setShowDurationSelector(false)
+      setRoomBookings([])
+      setAvailableDurations([])
     }
   }, [isOpen])
 
-  const handleTimeSlotSelect = (selectedRoom: Room, timeSlot: TimeSlot) => {
-    setPreviewTimeSlot(timeSlot)
-    setStep("preview")
+  const handleTimeSlotSelect = async (selectedRoom: Room, timeSlot: TimeSlot) => {
+    if (!room) return
+    
+    try {
+      // Get room bookings for the selected date
+      const bookings = await getRoomBookings(room.id, selectedDate)
+      setRoomBookings(bookings)
+      
+      // Get available durations for this start time
+      const durations = getAvailableDurations(timeSlot.start, bookings)
+      setAvailableDurations(durations)
+      
+      setPreviewTimeSlot(timeSlot)
+      setShowDurationSelector(true)
+    } catch (error) {
+      console.error("Error fetching availability:", error)
+      setError("Failed to check availability")
+    }
+  }
+
+  const handleDurationSelect = (duration: number) => {
+    setSelectedDuration(duration)
+    if (previewTimeSlot) {
+      const endTime = new Date(previewTimeSlot.start)
+      endTime.setMinutes(endTime.getMinutes() + duration)
+      
+      setSelectedTimeSlot({
+        start: previewTimeSlot.start,
+        end: endTime,
+        available: true
+      })
+      setStep("preview")
+    }
+    setShowDurationSelector(false)
   }
 
   const handleConfirmTimeSlot = () => {
@@ -76,9 +114,9 @@ export function BookingModal({ room, isOpen, onClose, onBookingComplete }: Booki
 
       const user = JSON.parse(userData)
 
-      // Calculate end time based on duration
+      // Calculate end time based on selected duration
       const endTime = new Date(selectedTimeSlot.start)
-      endTime.setMinutes(endTime.getMinutes() + Number.parseInt(duration))
+      endTime.setMinutes(endTime.getMinutes() + selectedDuration)
 
       const attendeeEmails = attendees
         .split(",")
@@ -141,7 +179,7 @@ export function BookingModal({ room, isOpen, onClose, onBookingComplete }: Booki
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[95vw] w-full max-h-[95vh] overflow-y-auto p-4 sm:p-6 lg:p-8">
+      <DialogContent className="w-[90vw] sm:w-[80vw] lg:w-[70vw] max-w-none max-h-[95vh] overflow-y-auto p-4 sm:p-6 lg:p-8" style={{maxWidth: 'none'}}>
         <DialogHeader className="pb-4">
           <DialogTitle className="flex items-center justify-between">
             <span className="text-xl font-semibold">Book {room.name}</span>
@@ -160,7 +198,7 @@ export function BookingModal({ room, isOpen, onClose, onBookingComplete }: Booki
 
         {step === "datetime" && (
           <div className="space-y-8">
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 lg:gap-12">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
               {/* Room Info */}
               <div className="space-y-6">
                 <div className="p-6 bg-muted rounded-lg">
@@ -202,11 +240,11 @@ export function BookingModal({ room, isOpen, onClose, onBookingComplete }: Booki
               </div>
 
               {/* Time Slots */}
-              <div className="space-y-4 min-w-0">
+              <div className="space-y-4 min-w-0 flex-1">
                 <Label className="text-lg font-medium block">
                   Available Times for {formatDate(selectedDate)}
                 </Label>
-                <div className="min-h-[400px] overflow-y-auto border rounded-lg p-4 lg:p-6">
+                <div className="min-h-[400px] overflow-y-auto border rounded-lg p-6 min-w-[400px]">
                   <RoomAvailability room={room} selectedDate={selectedDate} onTimeSlotSelect={handleTimeSlotSelect} />
                 </div>
               </div>
@@ -221,7 +259,7 @@ export function BookingModal({ room, isOpen, onClose, onBookingComplete }: Booki
               <p className="text-muted-foreground">Please review your selected time slot before proceeding</p>
             </div>
             
-            <div className="max-w-3xl mx-auto">
+            <div className="max-w-4xl mx-auto">
               <div className="p-6 lg:p-8 bg-primary/5 border-2 border-primary/20 rounded-lg text-center">
                 <div className="space-y-4">
                   <div className="text-2xl sm:text-3xl font-bold text-primary break-words">
@@ -286,7 +324,9 @@ export function BookingModal({ room, isOpen, onClose, onBookingComplete }: Booki
                 </div>
                 <div className="space-y-1">
                   <span className="text-sm text-muted-foreground">Duration:</span>
-                  <p className="font-semibold text-base">{duration} minutes</p>
+                  <p className="font-semibold text-base">
+                    {availableDurations.find(d => d.duration === selectedDuration)?.label || `${selectedDuration} minutes`}
+                  </p>
                 </div>
               </div>
             </div>
@@ -306,21 +346,6 @@ export function BookingModal({ room, isOpen, onClose, onBookingComplete }: Booki
                   />
                 </div>
 
-                <div>
-                  <Label htmlFor="duration" className="text-base font-medium">Duration</Label>
-                  <Select value={duration} onValueChange={setDuration}>
-                    <SelectTrigger className="mt-3 h-14 text-base px-4">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="30">30 minutes</SelectItem>
-                      <SelectItem value="60">1 hour</SelectItem>
-                      <SelectItem value="90">1.5 hours</SelectItem>
-                      <SelectItem value="120">2 hours</SelectItem>
-                      <SelectItem value="180">3 hours</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
 
                 <div>
                   <Label htmlFor="attendees" className="text-base font-medium">Attendees (Email addresses)</Label>
@@ -375,6 +400,15 @@ export function BookingModal({ room, isOpen, onClose, onBookingComplete }: Booki
             </div>
           </form>
         )}
+
+        {/* Duration Selector Modal */}
+        <DurationSelector
+          isOpen={showDurationSelector}
+          onClose={() => setShowDurationSelector(false)}
+          startTime={previewTimeSlot?.start || new Date()}
+          availableDurations={availableDurations}
+          onDurationSelect={handleDurationSelect}
+        />
       </DialogContent>
     </Dialog>
   )
