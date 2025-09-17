@@ -141,7 +141,7 @@ export function BookingModal({ room, isOpen, onClose, onBookingComplete }: Booki
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[90vw] w-full max-h-[95vh] overflow-y-auto p-8">
+      <DialogContent className="max-w-[95vw] w-full max-h-[95vh] overflow-y-auto p-4 sm:p-6 lg:p-8">
         <DialogHeader className="pb-4">
           <DialogTitle className="flex items-center justify-between">
             <span className="text-xl font-semibold">Book {room.name}</span>
@@ -160,7 +160,7 @@ export function BookingModal({ room, isOpen, onClose, onBookingComplete }: Booki
 
         {step === "datetime" && (
           <div className="space-y-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 lg:gap-12">
               {/* Room Info */}
               <div className="space-y-6">
                 <div className="p-6 bg-muted rounded-lg">
@@ -202,11 +202,11 @@ export function BookingModal({ room, isOpen, onClose, onBookingComplete }: Booki
               </div>
 
               {/* Time Slots */}
-              <div className="space-y-4">
+              <div className="space-y-4 min-w-0">
                 <Label className="text-lg font-medium block">
                   Available Times for {formatDate(selectedDate)}
                 </Label>
-                <div className="min-h-[400px] overflow-y-auto border rounded-lg p-6">
+                <div className="min-h-[400px] overflow-y-auto border rounded-lg p-4 lg:p-6">
                   <RoomAvailability room={room} selectedDate={selectedDate} onTimeSlotSelect={handleTimeSlotSelect} />
                 </div>
               </div>
@@ -221,16 +221,16 @@ export function BookingModal({ room, isOpen, onClose, onBookingComplete }: Booki
               <p className="text-muted-foreground">Please review your selected time slot before proceeding</p>
             </div>
             
-            <div className="max-w-2xl mx-auto">
-              <div className="p-8 bg-primary/5 border-2 border-primary/20 rounded-lg text-center">
+            <div className="max-w-3xl mx-auto">
+              <div className="p-6 lg:p-8 bg-primary/5 border-2 border-primary/20 rounded-lg text-center">
                 <div className="space-y-4">
-                  <div className="text-3xl font-bold text-primary">
+                  <div className="text-2xl sm:text-3xl font-bold text-primary break-words">
                     {formatTime(previewTimeSlot.start)} - {formatTime(previewTimeSlot.end)}
                   </div>
-                  <div className="text-xl text-muted-foreground">
+                  <div className="text-lg sm:text-xl text-muted-foreground">
                     {formatDate(previewTimeSlot.start)}
                   </div>
-                  <div className="flex justify-center items-center space-x-4 text-sm text-muted-foreground">
+                  <div className="flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
                     <div className="flex items-center space-x-2">
                       <Users className="h-5 w-5" />
                       <span>{room.capacity} people</span>
@@ -269,7 +269,7 @@ export function BookingModal({ room, isOpen, onClose, onBookingComplete }: Booki
             {/* Booking Summary */}
             <div className="p-8 bg-primary/5 border border-primary/20 rounded-lg">
               <h3 className="font-semibold text-xl mb-6">Booking Summary</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
                 <div className="space-y-1">
                   <span className="text-sm text-muted-foreground">Room:</span>
                   <p className="font-semibold text-base">{room.name}</p>
@@ -280,7 +280,7 @@ export function BookingModal({ room, isOpen, onClose, onBookingComplete }: Booki
                 </div>
                 <div className="space-y-1">
                   <span className="text-sm text-muted-foreground">Time:</span>
-                  <p className="font-semibold text-base">
+                  <p className="font-semibold text-sm sm:text-base break-words">
                     {formatTime(selectedTimeSlot.start)} - {formatTime(selectedTimeSlot.end)}
                   </p>
                 </div>
